@@ -21,6 +21,7 @@ from __future__ import division
 
 import sys
 import os
+import pandas as pd
 
 import os.path as osp
 
@@ -65,6 +66,10 @@ def main(**args):
     out_img_folder = osp.join(output_folder, 'images')
     if not osp.exists(out_img_folder):
         os.makedirs(out_img_folder)
+
+    keypoints_folder = osp.join(output_folder, '3D_keypoints')
+    if not osp.exists(keypoints_folder):
+        os.makedirs(keypoints_folder)
 
     float_dtype = args['float_dtype']
     if float_dtype == 'float64':
@@ -225,6 +230,11 @@ def main(**args):
             if not osp.exists(curr_img_folder):
                 os.makedirs(curr_img_folder)
 
+            curr_keypoint_folder = osp.join(output_folder, '3D_keypoints', fn,
+                                       '{:03d}'.format(person_id))
+            if not osp.exists(curr_keypoint_folder):
+                os.makedirs(curr_keypoint_folder)
+
             if gender_lbl_type != 'none':
                 if gender_lbl_type == 'pd' and 'gender_pd' in data:
                     gender = data['gender_pd'][person_id]
@@ -259,7 +269,13 @@ def main(**args):
                              right_hand_prior=right_hand_prior,
                              jaw_prior=jaw_prior,
                              angle_prior=angle_prior,
+                             save_3d_joints=True,  # To save 3D keypoints
                              **args)
+            
+            # Save 3D keypoints as CSV
+            keypoints_3d = keypoints[person_id, :, 0:3]  # Extract 3D keypoints (X, Y, Z)
+            keypoints_3d_fn = osp.join(curr_keypoint_folder, f'{person_id:03d}_3d_keypoints.csv')
+            pd.DataFrame(keypoints_3d, columns=['X', 'Y', 'Z']).to_csv(keypoints_3d_fn, index=False)
 
     elapsed = time.time() - start
     time_msg = time.strftime('%H hours, %M minutes, %S seconds',

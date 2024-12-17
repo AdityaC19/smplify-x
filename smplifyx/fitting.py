@@ -32,6 +32,7 @@ import torch.nn as nn
 from mesh_viewer import MeshViewer
 import utils
 
+counter = 0
 
 @torch.no_grad()
 def guess_init(model,
@@ -82,6 +83,11 @@ def guess_init(model,
     output = model(body_pose=body_pose, return_verts=False,
                    return_full_pose=False)
     joints_3d = output.joints
+    print('INITIAL ESTIMATE OF 3D JOINTS: ', joints_3d)
+
+    global counter
+    counter += 1
+
     joints_2d = joints_2d.to(device=joints_3d.device)
 
     diff3d = []
@@ -367,6 +373,18 @@ class SMPLifyLoss(nn.Module):
                 use_vposer=False, pose_embedding=None,
                 **kwargs):
         projected_joints = camera(body_model_output.joints)
+        # print('PROJECTED JOINTS: ', body_model_output.joints)
+        joints_tensor_np = body_model_output.joints.detach().cpu().numpy()
+        joints_tensor_2d = joints_tensor_np[0]
+
+        import pandas as pd
+        joints_df = pd.DataFrame(joints_tensor_2d, columns=['X', 'Y', 'Z'])
+
+        global counter
+        file_path_j = 'OUTPUT_FINAL/Joints3D/joints' + str(counter) + '.csv'
+        joints_df.to_csv(file_path_j, index=False)
+        #print(f"Saved tensor to {file_path_j}")
+        
         # Calculate the weights for each joints
         weights = (joint_weights * joints_conf
                    if self.use_joints_conf else
@@ -412,15 +430,19 @@ class SMPLifyLoss(nn.Module):
         expression_loss = 0.0
         jaw_prior_loss = 0.0
         if self.use_face:
+            # Detach the tensors to prevent deformations
+            expression = body_model_output.expression.detach()
+            expression.requires_grad = False
             expression_loss = torch.sum(self.expr_prior(
-                body_model_output.expression)) * \
-                self.expr_prior_weight ** 2
+                expression)) * self.expr_prior_weight ** 2
 
             if hasattr(self, 'jaw_prior'):
+                jaw_pose = body_model_output.jaw_pose.detach()
+                jaw_pose.requires_grad = False
                 jaw_prior_loss = torch.sum(
                     self.jaw_prior(
-                        body_model_output.jaw_pose.mul(
-                            self.jaw_prior_weight)))
+                        jaw_pose.mul(self.jaw_prior_weight)))
+
 
         pen_loss = 0.0
         # Calculate the loss due to interpenetration

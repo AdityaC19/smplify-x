@@ -64,6 +64,7 @@ def fit_single_frame(img,
                      loss_type='smplify',
                      use_cuda=True,
                      init_joints_idxs=(9, 12, 2, 5),
+                     save_3d_joints=False,   #  New argument to toggle saving
                      use_face=True,
                      use_hands=True,
                      data_weights=None,
@@ -550,6 +551,21 @@ def fit_single_frame(img,
         input_img = img.detach().cpu().numpy()
         output_img = (color[:, :, :-1] * valid_mask +
                       (1 - valid_mask) * input_img)
+        
+        r.delete()
 
         img = pil_img.fromarray((output_img * 255).astype(np.uint8))
         img.save(out_img_fn)
+
+'''
+    if save_3d_joints:
+        # Save the 3D joints to a CSV file
+        import csv
+        joints_output_file = osp.join(output_folder, '3d_joints_{:03d}.csv.format(person_id)')
+        with open(joints_output_file, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['Joint Index', 'X', 'Y', 'Z'])  # Header row
+            for idx, joint in enumerate(vertices):
+                writer.writerow([idx, joint[0], joint[1], joint[2]])
+        print(f'3D joints saved to {joints_output_file}')
+'''

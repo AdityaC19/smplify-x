@@ -15,26 +15,20 @@
 #
 # Contact: ps-license@tuebingen.mpg.de
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import division
-
-
+from __future__ import absolute_import, print_function, division
+import pyrender
+import trimesh
 import numpy as np
-
 
 class MeshViewer(object):
 
     def __init__(self, width=1200, height=800,
                  body_color=(1.0, 1.0, 0.9, 1.0),
-                 registered_keys=None):
+                 registered_keys=None, close_delay=2):
         super(MeshViewer, self).__init__()
 
         if registered_keys is None:
             registered_keys = dict()
-
-        import trimesh
-        import pyrender
 
         self.mat_constructor = pyrender.MetallicRoughnessMaterial
         self.mesh_constructor = trimesh.Trimesh
@@ -66,7 +60,6 @@ class MeshViewer(object):
 
     def create_mesh(self, vertices, faces, color=(0.3, 0.3, 0.3, 1.0),
                     wireframe=False):
-
         material = self.mat_constructor(
             metallicFactor=0.0,
             alphaMode='BLEND',
@@ -80,7 +73,7 @@ class MeshViewer(object):
         return self.trimesh_to_pymesh(mesh, material=material)
 
     def update_mesh(self, vertices, faces):
-        if not self.viewer.is_active:
+        if not self.is_active():
             return
 
         self.viewer.render_lock.acquire()

@@ -47,7 +47,7 @@ if __name__ == '__main__':
     else:
         device = torch.device('cpu')
 
-    model_type = args.get('model_type', 'smplx')
+    model_type = args.get('model_type', 'smpl')
     print('Model type:', model_type)
     print(args.get('model_folder'))
     model_params = dict(model_path=args.get('model_folder'),
